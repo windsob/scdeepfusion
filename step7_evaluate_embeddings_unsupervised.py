@@ -1,44 +1,26 @@
 #!/usr/bin/env python3
 """
-Comprehensive Unsupervised Embedding Evaluation Framework (v2.2)
+Comprehensive Unsupervised Embedding Evaluation Framework (v2.3)
 ==========================================================================
 Marker-anchored, label-free embedding evaluation.
 
 Evaluation metric:
-MDF (Marker Discrimination F): KMeans-based Marker F-score, averaged over
-multiple n_clusters AND multiple KMeans seeds. Reported as two separate axes:
-- MDF_type: cell-type marker panel - tests cell-type structure.
-- MDF_isg: perturbation-response panel (where applicable) - tests whether
-  embeddings resolve perturbation state within/across cell types.
-The two axes are reported separately and are not aggregated.
-
-The unsupervised evaluation is intentionally marker-anchored only: silhouette
+MDF (Marker Discrimination F): KMeans-based Marker F-score over an a priori
+cell-type marker panel, averaged over multiple n_clusters AND multiple KMeans
+seeds. MDF is computed in the NATIVE embedding space (UMAP is used for
+plotting only). The metric is intentionally marker-anchored only: silhouette
 needs no dedicated unsupervised variant here because the scIB suite already
 covers silhouette-based metrics with ground-truth anchors (ASW label/batch).
 
-v2.1 (2026-08-11): dual marker panels.
-- MDF_type: cell-type markers (unchanged v2 panel) - tests coarse cell-type structure.
-- MDF_isg: interferon-stimulated genes (IFN-beta perturbation response) - tests
-  whether embeddings resolve STIMULATION STATE within/across cell types.
-  Rationale: on ifnb the batch axis IS the biological perturbation; the two-level
-  architecture's unique contribution (module layer + attention) is expected to
-  live on this axis, which the cell-type panel cannot see.
-  Panel = canonical type-I IFN response genes; availability-checked against var
-  (19/25 present in ifnb, all well-expressed; missing ones are reported, not
-  silently dropped by hand).
-
-v2 protocol changes (addressing post-hoc selection bias):
-- Markers: canonical literature markers for ALL 13 annotated ifnb cell types,
-  chosen a priori from biology, NOT filtered by expression level / rarity
-  (rare types like pDC/Eryth are exactly the fine-grained test cases).
-- Marker expression read from layers['normalized'] (v1 used raw counts in X,
-  which confounds marker F-stats with library size).
-- KMeans runs in the NATIVE embedding space (v1 compressed every method to 2D
-  UMAP first and truncated different methods to different dims - both unfair
-  and lossy for fine-grained structure). UMAP is now used for plotting only.
-- No hand-crafted adjustments: marker F normalized as F/(1+F) (monotonic,
-  parameter-free) instead of tanh.
+Protocol notes (addressing post-hoc selection bias):
+- Markers: canonical literature markers for the dataset's cell types, chosen
+  a priori from biology, NOT filtered by expression level / rarity (rare types
+  are exactly the fine-grained test cases).
+- Marker expression read from layers['normalized'] (raw counts in X confound
+  marker F-stats with library size).
+- Marker F normalized as F/(1+F) (monotonic, parameter-free).
 - KMeans averaged over 3 seeds (42/43/44) per n_clusters for stability.
+- No aggregation: MDF is reported as a single marker-panel score.
 
 Note: All metrics are computed independently and are fully unsupervised
 (no ground-truth cell type labels used). Labels are only used for plot coloring.
@@ -100,16 +82,6 @@ CELL_TYPE_MARKERS = {
     'Eryth':        ['HBA1', 'HBA2', 'HBB'],
 }
 MARKER_GENES = [g for genes in CELL_TYPE_MARKERS.values() for g in genes]
-
-# v2.1: perturbation (ISG) panel - canonical type-I IFN response genes.
-# Chosen a priori from IFN biology, same no-hand-filtering principle as the
-# cell-type panel. Verified 2026-08-11: 19/25 present in ifnb var, all expressed.
-PERTURB_MARKER_GENES = [
-    'ISG15', 'IFI6', 'IFIT1', 'IFIT2', 'IFIT3', 'IFIT5', 'MX1', 'MX2',
-    'OAS1', 'OAS2', 'OAS3', 'OASL', 'IFITM1', 'IFITM2', 'IFITM3',
-    'STAT1', 'IRF7', 'XAF1', 'LY6E', 'RSAD2', 'HERC5', 'ISG20',
-    'IFI27', 'IFI27L1', 'SAMD9L',
-]
 
 N_CLUSTERS_LIST = [8, 10, 12, 15, 20]
 KMEANS_SEEDS = [42, 43, 44]  # v2: average over seeds for stability
@@ -183,19 +155,15 @@ def compute_mdf(coords, marker_expr, n_clusters_list=None, seeds=None):
     return float(raw_score / (1.0 + raw_score))
 
 
-def evaluate_embedding(coords, marker_expr, isg_expr, embedding_name, n_clusters_list=None):
-    """Evaluate a single embedding across multiple dimensions"""
+def evaluate_embedding(coords, marker_expr, embedding_name, n_clusters_list=None):
+    """Evaluate a single embedding with the marker-anchored MDF metric."""
     print(f"\nEvaluating {embedding_name} ...")
 
     results = {'embedding': embedding_name}
 
-    print("  Computing MDF_type (cell-type marker F)...")
-    results['MDF_type'] = compute_mdf(coords, marker_expr, n_clusters_list)
+    print("  Computing MDF (cell-type marker F)...")
+    results['MDF'] = compute_mdf(coords, marker_expr, n_clusters_list)
 
-    print("  Computing MDF_isg (perturbation-response marker F)...")
-    results['MDF_isg'] = compute_mdf(coords, isg_expr, n_clusters_list)
-
-    # Marker-anchored axes only; no aggregate score is computed.
     return results
 
 
@@ -234,12 +202,12 @@ def create_single_umap_plot(adata, coords, method_name, seurat_types, output_pat
 
 
 def create_quantitative_comparison_barplot(results_df, output_path):
-    """Create quantitative comparison bar plot (sorted by MDF_type).
+    """Create quantitative comparison bar plot (sorted by MDF).
 
     v2: baselines + ALL DeepFusion-family embeddings (pred/fusion/pathway_mlp
     of every version & ablation & seed) - the full unsupervised comparison.
     """
-    plot_df = results_df.copy().sort_values('MDF_type', ascending=True)
+    plot_df = results_df.copy().sort_values('MDF', ascending=True)
 
     name_map = {
         'X_Seurat_umap': 'Seurat',
@@ -261,8 +229,7 @@ def create_quantitative_comparison_barplot(results_df, output_path):
     x = np.arange(n)
     width = 0.27
 
-    bars1 = ax.bar(x - width / 2, plot_df['MDF_type'], width, label='MDF_type (cell-type)', color='coral', edgecolor='black', linewidth=0.5)
-    bars2 = ax.bar(x + width / 2, plot_df['MDF_isg'], width, label='MDF_isg (perturbation response)', color='seagreen', edgecolor='black', linewidth=0.5)
+    bars1 = ax.bar(x, plot_df['MDF'], width=0.6, label='MDF (cell-type markers)', color='coral', edgecolor='black', linewidth=0.5)
 
     for bars in [bars1, bars2]:
         for bar in bars:
@@ -273,11 +240,11 @@ def create_quantitative_comparison_barplot(results_df, output_path):
                        ha='center', va='bottom', fontsize=7, rotation=90)
 
     ax.set_ylabel('Score', fontsize=12)
-    ax.set_title('Unsupervised Embedding Evaluation (marker-anchored: MDF_type + MDF_isg)', fontsize=14, weight='bold')
+    ax.set_title('Unsupervised Embedding Evaluation (marker-anchored MDF)', fontsize=14, weight='bold')
     ax.set_xticks(x)
     ax.set_xticklabels(plot_df['display_name'], fontsize=8, rotation=45, ha='right')
     ax.legend(loc='upper left', fontsize=10)
-    ax.set_ylim(0, min(1.2, plot_df[['MDF_type', 'MDF_isg']].values.max() * 1.25))
+    ax.set_ylim(0, min(1.2, plot_df['MDF'].values.max() * 1.25))
 
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
@@ -296,9 +263,6 @@ def main():
     parser.add_argument('--marker-genes', type=str, nargs='+',
                        default=MARKER_GENES,
                        help='List of marker gene symbols for MDF computation')
-    parser.add_argument('--perturb-genes', type=str, nargs='+',
-                       default=PERTURB_MARKER_GENES,
-                       help='List of perturbation/ISG marker gene symbols for MDF_isg computation')
     parser.add_argument('--n-clusters', type=int, nargs='+',
                        default=N_CLUSTERS_LIST,
                        help='List of n_clusters for KMeans evaluation')
@@ -326,7 +290,6 @@ def main():
         print("⚠️ layers['normalized'] not found, falling back to X (check normalization!)")
 
     marker_genes = args.marker_genes if args.marker_genes else MARKER_GENES
-    perturb_genes = args.perturb_genes if args.perturb_genes else PERTURB_MARKER_GENES
 
     def build_panel(genes, panel_name):
         available = [g for g in genes if g in adata.var_names]
@@ -345,7 +308,6 @@ def main():
         return mat
 
     marker_expr = build_panel(marker_genes, "Cell-type panel")
-    isg_expr = build_panel(perturb_genes, "ISG panel")
 
     # baselines + DeepFusion embeddings matching CURRENT_TAGS
     base_embeddings = BASE_EMBEDDINGS
@@ -359,7 +321,7 @@ def main():
     print(f"\nMethods to evaluate: {len(embeddings_to_evaluate)}")
     for e in embeddings_to_evaluate:
         print(f"  - {e} ({adata.obsm[e].shape[1]}D native)")
-    print(f"Evaluation metrics: MDF_type, MDF_isg, CS (native space, seeds {KMEANS_SEEDS})")
+    print(f"Evaluation metrics: MDF (native space, seeds {KMEANS_SEEDS})")
 
     # Evaluate
     print("\n" + "=" * 70)
@@ -372,12 +334,12 @@ def main():
     for method_name in embeddings_to_evaluate:
         embedding = np.asarray(adata.obsm[method_name])
         # v2: metrics in NATIVE embedding space (no UMAP compression, no dim truncation)
-        result = evaluate_embedding(embedding, marker_expr, isg_expr, method_name, n_clusters_list)
+        result = evaluate_embedding(embedding, marker_expr, method_name, n_clusters_list)
         results_list.append(result)
 
     # Create score table
     results_df = pd.DataFrame(results_list)
-    results_df = results_df.sort_values('MDF_type', ascending=False)
+    results_df = results_df.sort_values('MDF', ascending=False)
 
     print("\n" + "=" * 70)
     print("Evaluation Result Score Table")
@@ -390,8 +352,7 @@ def main():
     # Show best method
     best_method = results_df.iloc[0]['embedding']
     print(f"\nBest method: {best_method}")
-    for metric in ['MDF_type', 'MDF_isg']:
-        print(f"  {metric}: {results_df.iloc[0][metric]:.4f}")
+    print(f"  MDF: {results_df.iloc[0]['MDF']:.4f}")
 
     # Generate visualizations (UMAP for plotting only)
     print("\n" + "=" * 70)

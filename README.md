@@ -1,8 +1,8 @@
 # scDeepFusion — code release (ifnb flagship pipeline)
 
-End-to-end pipeline for scDeepFusion: auditable gene-module representation learning
-with typed-expert routing for single-cell RNA-seq integration.
-This package reproduces the flagship ifnb results: the main
+End-to-end pipeline for the ICLR submission "scDeepFusion: Auditable Gene-Module
+Representation Learning with Typed-Expert Routing for Single-Cell RNA-seq Integration".
+This package reproduces the flagship ifnb results reported in the paper: the main
 benchmark table, the ablation suite, the pathway-scoring baselines, and the
 loss-weight sensitivity analysis.
 
@@ -20,7 +20,7 @@ step5-1_harmony_teacher.py       Harmony teachers at multiple PC counts
 step5-2_deepfusion_multitoken.py The main model (typed-expert MoE routing)
 step5-3_pathway_mlp_control.py   Control: MLP readout on the same module activity
 step6_scib_evaluate.py           Standard scIB v1.1.5, native embedding space
-step7_evaluate_embeddings_unsupervised.py  MDF (43-gene panel) + ISG panel + CS
+step7_evaluate_embeddings_unsupervised.py  MDF (a priori cell-type marker panel)
 pathway_baselines/               AUCell / GSVA / UCell + distilled-readout control
 SC_data/                         MSigDB C2 v2026.1 module library + converter
 envs/                            Per-environment dependency pins
