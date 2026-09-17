@@ -1,8 +1,8 @@
 # scDeepFusion — code release (ifnb flagship pipeline)
 
-End-to-end pipeline for the ICLR submission "scDeepFusion: Auditable Gene-Module
-Representation Learning with Typed-Expert Routing for Single-Cell RNA-seq Integration".
-This package reproduces the flagship ifnb results reported in the paper: the main
+End-to-end pipeline for scDeepFusion: auditable gene-module representation learning
+with typed-expert routing for single-cell RNA-seq integration.
+This package reproduces the flagship ifnb results: the main
 benchmark table, the ablation suite, the pathway-scoring baselines, and the
 loss-weight sensitivity analysis.
 
