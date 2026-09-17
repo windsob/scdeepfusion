@@ -1,0 +1,16 @@
+# scDeepFusion training environment (steps 5-2, 5-3, 7, pb_step7, pb_step8)
+# python 3.9+ (torch with MPS on Apple Silicon, or CUDA on NVIDIA)
+numpy==1.26.4
+pandas==2.3.0
+scipy==1.13.1
+scikit-learn==1.6.1
+anndata==0.10.9
+scanpy==1.10.3
+umap-learn==0.5.7
+torch==2.3.0
+optuna==4.4.0
+leidenalg==0.10.2
+igraph==0.11.9
+matplotlib==3.9.4
+seaborn==0.13.2
+numba==0.59.1

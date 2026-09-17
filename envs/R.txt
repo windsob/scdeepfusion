@@ -1,0 +1,5 @@
+# R environment for data/step0 (Seurat pipeline, raw data -> annotated h5ad)
+# R 4.3.2
+Seurat@5.2.1
+SeuratData   # provides the public `ifnb` object (Kang et al. 2018)
+hdf5r        # for create_seurat_processed_h5ad.py interoperability

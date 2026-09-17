@@ -1,0 +1,16 @@
+# scGPT fine-tuning environment (step 4)
+# python 3.9+ ; ALSO requires the scGPT source checkout (see README step 2)
+numpy==1.26.4
+pandas==2.3.0
+scipy==1.13.1
+scikit-learn==1.6.1
+anndata==0.10.9
+scanpy==1.10.3
+scgpt==0.2.4
+scvi-tools==0.20.3
+torch==2.1.0
+leidenalg==0.10.2
+igraph==0.11.9
+scib==1.1.7
+umap-learn==0.5.7
+matplotlib==3.9.4

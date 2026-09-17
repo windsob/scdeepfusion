@@ -1,0 +1,8 @@
+# pathway-scoring baselines environment (pb_step1)
+# python 3.10+ (uv venv recommended)
+decoupler==2.1.4
+gseapy
+anndata
+scanpy
+numpy
+pandas
