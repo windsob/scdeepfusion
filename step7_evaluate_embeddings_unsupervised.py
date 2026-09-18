@@ -90,7 +90,10 @@ KMEANS_SEEDS = [42, 43, 44]  # v2: average over seeds for stability
 # Baselines are evaluated by default in the standard pipeline; set to False to skip.
 BASE_EMBEDDINGS_ENABLED = True  # Evaluate all baseline embeddings
 BASE_EMBEDDINGS = [
-    'X_Seurat_umap', 'X_scVI', 'X_bbknn',
+    # Seurat is evaluated on its native integrated representation (the
+    # integrated CCA embedding), per the scIB convention that each method is
+    # scored in its native output space; UMAP is a visualization by-product.
+    'X_Seurat_cca', 'X_scVI', 'X_bbknn',
     'X_harmony_pca', 'X_scanorama', 'X_scGPT'
 ] if BASE_EMBEDDINGS_ENABLED else []
 
@@ -99,8 +102,10 @@ BASE_EMBEDDINGS = [
 CURRENT_TAGS = ['_std']  # Standard pipeline tag
 INCLUDE_PATHWAY_MLP = True  # Evaluate pathway_mlp alongside the other embeddings
 
-# Methods whose native output is already 2D (used directly for metrics AND plots)
-NATIVE_2D_METHODS = {'X_Seurat_umap', 'X_bbknn'}
+# BBKNN outputs a neighbor graph only; its stored 2D UMAP is the closest
+# embedding-like artifact and is used directly for metrics AND plots.
+# (Seurat is no longer special-cased: it is evaluated on X_Seurat_cca.)
+NATIVE_2D_METHODS = {'X_bbknn'}
 
 # DeepFusion-family patterns to auto-collect from obsm (all versions/ablations/seeds)
 FUSION_PATTERNS = ('X_pred_embedding', 'X_fusion', 'X_pathway_mlp')
@@ -210,7 +215,7 @@ def create_quantitative_comparison_barplot(results_df, output_path):
     plot_df = results_df.copy().sort_values('MDF', ascending=True)
 
     name_map = {
-        'X_Seurat_umap': 'Seurat',
+        'X_Seurat_cca': 'Seurat',
         'X_scVI': 'scVI',
         'X_bbknn': 'BBKNN',
         'X_harmony_pca': 'Harmony',

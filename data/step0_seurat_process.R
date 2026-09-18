@@ -104,8 +104,16 @@ write.csv(data.frame(
   UMAP_2 = umap_matrix[, 2]
 ), "sobj_umap_matrix_v5.csv", row.names = FALSE)
 
+# Pre-integration PCA (kept for diagnostics/backward compatibility only;
+# the native integrated representation is integrated.cca, exported below)
 pca_matrix <- Embeddings(sobj, reduction = "pca")
 write.csv(pca_matrix, "sobj_pca_matrix_v5.csv")
+
+# Integrated CCA embedding: the native integrated cell representation produced
+# by CCAIntegration (all downstream steps above - neighbors, clusters, UMAP -
+# are computed on it). This is the embedding on which Seurat is benchmarked.
+cca_matrix <- Embeddings(sobj, reduction = "integrated.cca")
+write.csv(cca_matrix, "sobj_cca_matrix_v5.csv")
 
 saveRDS(sobj, "sobj_seurat_processed.rds")
 

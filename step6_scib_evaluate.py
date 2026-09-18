@@ -54,7 +54,10 @@ base_embeddings = [
     'X_scGPT',
     'X_scanorama',
     'X_bbknn',
-    'X_Seurat_umap'
+    # Seurat is evaluated on its native integrated representation (the
+    # integrated CCA embedding), per the scIB convention that each method is
+    # scored in its native output space; UMAP is a visualization by-product.
+    'X_Seurat_cca'
 ] if BASE_EMBEDDINGS_ENABLED else []
 
 # DeepFusion family: evaluate only the new embeddings (X_fusion*/X_pred_embedding*)

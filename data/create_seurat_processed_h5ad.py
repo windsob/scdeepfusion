@@ -83,12 +83,25 @@ print(f"UMAP shape: {umap.shape}")
 # ==================== 5. Optional: Add PCA ====================
 pca_file = "sobj_pca_matrix_v5.csv"
 if os.path.exists(pca_file):
-    print("Adding PCA...")
+    print("Adding PCA (pre-integration, diagnostic only)...")
     pca = pd.read_csv(pca_file, index_col=0)
     # Align PCA with adata.obs
     pca = pca.loc[adata.obs.index]
     adata.obsm["X_Seurat_pca"] = pca.values
     print(f"PCA shape: {pca.shape}")
+
+# ==================== 5b. Optional: Add integrated CCA embedding ====================
+# Native integrated representation produced by Seurat v5 CCAIntegration
+# (reduction "integrated.cca"). Purely additive: all outputs above are
+# unchanged, and downstream steps do not depend on this key.
+cca_file = "sobj_cca_matrix_v5.csv"
+if os.path.exists(cca_file):
+    print("Adding integrated CCA embedding...")
+    cca = pd.read_csv(cca_file, index_col=0)
+    # Align with adata.obs
+    cca = cca.loc[adata.obs.index]
+    adata.obsm["X_Seurat_cca"] = cca.values
+    print(f"CCA shape: {cca.shape}")
 
 # ==================== 6. Save ====================
 print("Saving h5ad...")
